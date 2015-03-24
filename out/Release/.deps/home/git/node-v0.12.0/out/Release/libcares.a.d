@@ -1,0 +1,1 @@
+cmd_/home/git/node-v0.12.0/out/Release/libcares.a := ln -f "/home/git/node-v0.12.0/out/Release/obj.target/deps/cares/libcares.a" "/home/git/node-v0.12.0/out/Release/libcares.a" 2>/dev/null || (rm -rf "/home/git/node-v0.12.0/out/Release/libcares.a" && cp -af "/home/git/node-v0.12.0/out/Release/obj.target/deps/cares/libcares.a" "/home/git/node-v0.12.0/out/Release/libcares.a")

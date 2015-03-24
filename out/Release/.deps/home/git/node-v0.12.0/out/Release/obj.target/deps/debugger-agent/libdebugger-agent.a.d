@@ -1,0 +1,1 @@
+cmd_/home/git/node-v0.12.0/out/Release/obj.target/deps/debugger-agent/libdebugger-agent.a := rm -f /home/git/node-v0.12.0/out/Release/obj.target/deps/debugger-agent/libdebugger-agent.a && ar crs /home/git/node-v0.12.0/out/Release/obj.target/deps/debugger-agent/libdebugger-agent.a /home/git/node-v0.12.0/out/Release/obj.target/debugger-agent/deps/debugger-agent/src/agent.o
