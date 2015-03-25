@@ -1,31 +1,41 @@
-function ServiceInstance (name, path) {
+var uuid			= require('node-uuid');
+
+
+function ServiceInstance (name) {
 	this.name = name;
-	this.path = path;
-	this.id = '123';
-}
-
-
-ServiceInstance.prototype.serialize = function(){
-	var instance = new Object();
-	instance.name = this.name;
-
-	return JSON.stringify(instance);
-}
-
-ServiceInstance.prototype.deserialize = function(raw){
-	var instance = JSON.parse(raw);
-	this.name = instance.name;
-
-	return this;
+	this.id = uuid.v4();
 }
 
 ServiceInstance.prototype.getId = function(){
-	return this.id;
+	var self = this;
+	return self.id;
+}
+
+ServiceInstance.prototype.getName = function(){
+	var self = this;
+	return self.name;
 }
 
 function build(name){
 	return new ServiceInstance(name);
 }
 
+function serialize(service){
+	var instance = new Object();
+	instance.name = service.name;
+	instance.id = service.id;
+
+	return JSON.stringify(instance);
+}
+
+function deserialize(rawStr){
+	var instance = JSON.parse(rawStr);
+	var service = new ServiceInstance(instance.name);
+
+	return service;
+}
+
 exports.build = build;
+exports.serialize = serialize;
+exports.deserialize = deserialize;
 exports.ServiceInstance = ServiceInstance;

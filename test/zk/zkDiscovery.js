@@ -4,15 +4,17 @@ var ServiceDiscovery	=		require("./ServiceDiscovery.js");
 
 
 
-var service = ServiceInstance.build("test");
+var service1 = ServiceInstance.build("test");
+var service2 = ServiceInstance.build("test");
 
-var discovery = ServiceDiscovery.build("112.124.117.146","2181");
+var discovery = ServiceDiscovery.build("112.124.117.146", "2181", "/firebats");
 
 
 discovery.client.once("connected", function(){
+	discovery.registerService(service1);
+	discovery.registerService(service2);
+	/*
 	var path = '/txn';
-
-	discovery.registerService(service);
 	discovery.client.getData(
 				path, 
 				function (event) {
@@ -32,6 +34,8 @@ discovery.client.once("connected", function(){
 					    stat.version
 					);
 				});
+	*/
+	discovery.queryForInstances('test');
 });
 
 discovery.client.connect();
