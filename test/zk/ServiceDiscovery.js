@@ -1,4 +1,5 @@
 var zookeeper		= require('node-zookeeper-client');
+var Exception       = require('node-zookeeper-client/lib/Exception');
 var ServiceInstance = require('./ServiceInstance.js');
 
 function ServiceDiscovery (localhost, port, basePath) {
@@ -18,24 +19,22 @@ function ServiceDiscovery (localhost, port, basePath) {
 ServiceDiscovery.prototype.registerService = function (service) {
     var self = this;
     var instancePath = self.pathForInstance(service.getName(), service.getId());
+    var servicePath = self.pathForName(service.getName());
 
 	self.services.set(service.getId(), service);
-	self.client.transaction().
-        //FIXME
-        mkdirp()
-		create(instancePath, new Buffer(ServiceInstance.serialize(service))).
-		commit(function (error, results) {
-            if (error) {
-                console.log(
-                    'Failed to execute the transaction: %s, results: %j',
-                    error,
-                    results
-                );
-                return;
-            }
 
-            console.log('Transaction completed.');
+
+    for(var i = 0;i < 2; i++){
+        self.client.transaction().
+        create(self.basePath).
+        create(servicePath).
+        create(instancePath, new Buffer(ServiceInstance.serialize(service))).
+        commit(function (error, results) {
+            if (error && error.getCode() === Exception.NODE_EXISTS) {
+                self.client.transaction().remove(instancePath, -1);
+            }
         });
+    }
 };
 
 /**
@@ -71,6 +70,7 @@ ServiceDiscovery.prototype.queryForInstance = function(name, id) {
         },
         function (error, data, stat) {
             if( data != null){
+                console.log(ServiceInstance.deserialize(data.toString()));
                 return ServiceInstance.deserialize(data.toString());
             } else {
                 return null;
