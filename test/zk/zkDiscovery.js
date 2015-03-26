@@ -1,3 +1,4 @@
+var async				=		require("async");
 var zookeeper			=		require("node-zookeeper-client");
 var ServiceInstance		=		require("./ServiceInstance.js");
 var ServiceDiscovery	=		require("./ServiceDiscovery.js");	
@@ -35,7 +36,16 @@ discovery.client.once("connected", function(){
 					);
 				});
 	*/
-	discovery.queryForInstances('test');
+	async.waterfall([
+		function(callback) {
+			discovery.queryForInstances('test');
+		},
+		function(instances, callback) {
+			console.log(instances);
+		}
+	], function (error, result){
+		console.log(result);
+	});
 });
 
 discovery.client.connect();

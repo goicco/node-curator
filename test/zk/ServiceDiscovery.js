@@ -1,3 +1,5 @@
+var async           = require('async');
+
 var zookeeper		= require('node-zookeeper-client');
 var Exception       = require('node-zookeeper-client/lib/Exception');
 var ServiceInstance = require('./ServiceInstance.js');
@@ -23,19 +25,27 @@ ServiceDiscovery.prototype.registerService = function (service) {
 
 	self.services.set(service.getId(), service);
 
-
-    for(var i = 0;i < 2; i++){
-        self.client.transaction().
-        create(self.basePath).
-        create(servicePath).
-        create(instancePath, new Buffer(ServiceInstance.serialize(service))).
-        commit(function (error, results) {
-            if (error && error.getCode() === Exception.NODE_EXISTS) {
-                self.client.transaction().remove(instancePath, -1);
-            }
-        });
-    }
+    self.client.transaction().
+                create(self.basePath).
+                create(servicePath).
+                create(instancePath, new Buffer(ServiceInstance.serialize(service))).
+                commit(function (error, results) {
+                    if (error && error.getCode() === Exception.NODE_EXISTS) {
+                        //self.client.transaction().remove(instancePath, -1);
+                    }
+                });
 };
+
+
+ServiceDiscovery.prototype.unregisterService = function(service) {
+    var self = this;
+    var instancePath = self.pathForInstance(service.getName(), service.getId());
+
+    self.client.remove(instancePath, function(error){
+        if (error) {}
+    });
+    self.services.delete(service.getId());
+}
 
 /**
  * Get the names of all know services
@@ -70,7 +80,6 @@ ServiceDiscovery.prototype.queryForInstance = function(name, id) {
         },
         function (error, data, stat) {
             if( data != null){
-                console.log(ServiceInstance.deserialize(data.toString()));
                 return ServiceInstance.deserialize(data.toString());
             } else {
                 return null;
@@ -79,29 +88,40 @@ ServiceDiscovery.prototype.queryForInstance = function(name, id) {
     );
 }
 
-ServiceDiscovery.prototype.queryForInstances = function(name) {
+ServiceDiscovery.prototype.queryForInstances = function(name, callback) {
     var self = this;
     var servicePath = self.pathForName(name);
     var instances = new Array();
-
+    
     self.client.getChildren(
         servicePath,
         function (event) {
-
+            console.log('Got watcher event: %s', event);
         },
         function (error, data, stat) {
             if(data == null){
                 return null;
             } else {
-                for(var i = 0; i < data.length; i++){
-                    var instance = self.queryForInstance(name, data[i]);
+                async.each(
+                    data, 
+                    function(instanceId, callback){
+                        var instancePath = self.pathForInstance(name, instanceId);
+                        self.client.getData(
+                                instancePath,
+                                function (event) {},
+                                function (error, data, stat) {
+                                    if(data != null) {
+                                        instances.push(ServiceInstance.deserialize(data.toString()));
+                                        callback();
+                                    }
+                                }
+                            );
 
-                    if(instance != null) {
-                        instances.push(instance);
+                    }, function (error){
+                        callback(null, instances);
                     }
-                }
+                );
             }
-            return instances;
         }
     );
 }
