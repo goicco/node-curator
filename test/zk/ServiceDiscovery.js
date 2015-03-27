@@ -18,31 +18,38 @@ function ServiceDiscovery (localhost, port, basePath) {
     }
 }
 
-ServiceDiscovery.prototype.registerService = function (service) {
+ServiceDiscovery.prototype.registerService = function (service, callback) {
     var self = this;
     var instancePath = self.pathForInstance(service.getName(), service.getId());
     var servicePath = self.pathForName(service.getName());
 
 	self.services.set(service.getId(), service);
 
-    self.client.transaction().
-                create(self.basePath).
-                create(servicePath).
-                create(instancePath, new Buffer(ServiceInstance.serialize(service))).
+    async.waterfall([
+        function (next){
+            self.client.mkdirp(servicePath, zookeeper.CreateMode.PERSISTENT, next);
+        },function (path, next) {
+            self.client.transaction().
+                create(instancePath, zookeeper.CreateMode.EPHEMERAL ,new Buffer(ServiceInstance.serialize(service))).
                 commit(function (error, results) {
                     if (error && error.getCode() === Exception.NODE_EXISTS) {
-                        //self.client.transaction().remove(instancePath, -1);
+                        console.log('NODE_EXISTS');
                     }
-                });
+                    next();
+                })
+        }], function (error, result){
+            callback();
+        });
 };
 
 
-ServiceDiscovery.prototype.unregisterService = function(service) {
+ServiceDiscovery.prototype.unregisterService = function(service, callback) {
     var self = this;
     var instancePath = self.pathForInstance(service.getName(), service.getId());
 
     self.client.remove(instancePath, function(error){
         if (error) {}
+        callback();
     });
     self.services.delete(service.getId());
 }
@@ -92,7 +99,7 @@ ServiceDiscovery.prototype.queryForInstances = function(name, callback) {
     var self = this;
     var servicePath = self.pathForName(name);
     var instances = new Array();
-    
+
     self.client.getChildren(
         servicePath,
         function (event) {
@@ -102,23 +109,27 @@ ServiceDiscovery.prototype.queryForInstances = function(name, callback) {
             if(data == null){
                 return null;
             } else {
-                async.each(
+                async.eachSeries(
                     data, 
-                    function(instanceId, callback){
+                    function (instanceId, next){
                         var instancePath = self.pathForInstance(name, instanceId);
                         self.client.getData(
-                                instancePath,
-                                function (event) {},
-                                function (error, data, stat) {
-                                    if(data != null) {
-                                        instances.push(ServiceInstance.deserialize(data.toString()));
-                                        callback();
-                                    }
+                            instancePath,
+                            function (event) {},
+                            function (error, data, stat) {
+                                if(data != null) {
+                                    //FIXME to parse instance
+                                    var rawInstance = JSON.parse(data.toString());
+                                    instances.push(rawInstance);
+                                    next();
                                 }
-                            );
+                            }
+                        );
 
                     }, function (error){
-                        callback(null, instances);
+                        if (callback) {
+                            callback(null, instances);
+                        }
                     }
                 );
             }

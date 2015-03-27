@@ -5,42 +5,37 @@ var ServiceDiscovery	=		require("./ServiceDiscovery.js");
 
 
 
-var service1 = ServiceInstance.build("test");
-var service2 = ServiceInstance.build("test");
+var service1 = ServiceInstance.build("test", null);
+var service2 = ServiceInstance.build("test", null);
 
-var discovery = ServiceDiscovery.build("112.124.117.146", "2181", "/firebats");
+var discovery = ServiceDiscovery.build("192.168.1.220", "2181", "/firebats-yu/services");
 
 
 discovery.client.once("connected", function(){
+	/*
+	discovery.registerService(service1, function(){
+		//console.log('completed 1');
+		discovery.registerService(service2, function(){
+			//console.log('completed 2');
+		});
+	});
+	*/
+
+	/*
 	discovery.registerService(service1);
 	discovery.registerService(service2);
-	/*
-	var path = '/txn';
-	discovery.client.getData(
-				path, 
-				function (event) {
-	            	console.log('Got event: %s', event);
-	            	getData(client, path);
-	        	},
-				function (error, data, stat) {
-					if (error) {
-					    console.log('Error occurred when getting data: %s.', error);
-					    return;
-					}
-
-					console.log(
-					    'Node: %s has data: %s, version: %d',
-					    path,
-					    data ? data.toString() : undefined,
-					    stat.version
-					);
-				});
 	*/
+	/*
+	discovery.queryForInstances('test', function(error, data){
+		console.log(data);
+	});
+	*/
+	
 	async.waterfall([
-		function(callback) {
-			discovery.queryForInstances('test');
+		function (next) {
+			discovery.queryForInstances('bus.question.create', next);
 		},
-		function(instances, callback) {
+		function (instances, next) {
 			console.log(instances);
 		}
 	], function (error, result){
