@@ -8,7 +8,7 @@ var ServiceDiscovery	=		require("./ServiceDiscovery.js");
 var service1 = ServiceInstance.build("test", null);
 var service2 = ServiceInstance.build("test", null);
 
-var discovery = ServiceDiscovery.build("192.168.1.220", "2181", "/firebats-yu/services");
+var discovery = ServiceDiscovery.build("112.124.117.146", "2181", "/firebats");
 
 
 discovery.client.once("connected", function(){
@@ -31,15 +31,20 @@ discovery.client.once("connected", function(){
 	});
 	*/
 	
+	
 	async.waterfall([
 		function (next) {
-			discovery.queryForInstances('bus.question.create', next);
+			discovery.queryForInstance('test', '69913d26-16e5-4175-8ca8-8a57262e0d92', next);
 		},
 		function (instances, next) {
-			console.log(instances);
+			console.log('remove');
+			discovery.client.remove('/firebats/test/69913d26-16e5-4175-8ca8-8a57262e0d92', function(error){
+
+			});
+			//discovery.unregisterService();
 		}
 	], function (error, result){
-		console.log(result);
+		//console.log(result);
 	});
 });
 

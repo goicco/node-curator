@@ -30,7 +30,7 @@ ServiceDiscovery.prototype.registerService = function (service, callback) {
             self.client.mkdirp(servicePath, zookeeper.CreateMode.PERSISTENT, next);
         },function (path, next) {
             self.client.transaction().
-                create(instancePath, zookeeper.CreateMode.EPHEMERAL ,new Buffer(ServiceInstance.serialize(service))).
+                create(instancePath, zookeeper.CreateMode.PERSISTENT ,new Buffer(ServiceInstance.serialize(service))).
                 commit(function (error, results) {
                     if (error && error.getCode() === Exception.NODE_EXISTS) {
                         console.log('NODE_EXISTS');
@@ -76,20 +76,21 @@ ServiceDiscovery.prototype.queryForNames = function () {
     );
 }
 
-ServiceDiscovery.prototype.queryForInstance = function(name, id) {
+ServiceDiscovery.prototype.queryForInstance = function(name, id, callback) {
     var self = this;
     var instancePath = self.pathForInstance(name, id);
 
     self.client.getData(
         instancePath,
         function (event) {
-
+            console.log(event);
         },
         function (error, data, stat) {
             if( data != null){
-                return ServiceInstance.deserialize(data.toString());
+                //FIXME to return service instance.
+                callback(null, data.toString());
             } else {
-                return null;
+                callback(null, null);
             }
         }
     );
@@ -115,8 +116,11 @@ ServiceDiscovery.prototype.queryForInstances = function(name, callback) {
                         var instancePath = self.pathForInstance(name, instanceId);
                         self.client.getData(
                             instancePath,
-                            function (event) {},
+                            function (event) {
+                                console.log('Got event :%s', event);
+                            },
                             function (error, data, stat) {
+                                console.log(data);
                                 if(data != null) {
                                     //FIXME to parse instance
                                     var rawInstance = JSON.parse(data.toString());
