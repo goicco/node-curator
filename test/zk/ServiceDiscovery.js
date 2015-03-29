@@ -26,19 +26,22 @@ ServiceDiscovery.prototype.registerService = function (service, callback) {
 	self.services.set(service.getId(), service);
 
     async.waterfall([
-        function (next){
-            self.client.mkdirp(servicePath, zookeeper.CreateMode.PERSISTENT, next);
-        },function (path, next) {
-            self.client.transaction().
-                create(instancePath, zookeeper.CreateMode.PERSISTENT ,new Buffer(ServiceInstance.serialize(service))).
-                commit(function (error, results) {
-                    if (error && error.getCode() === Exception.NODE_EXISTS) {
-                        console.log('NODE_EXISTS');
-                    }
-                    next();
-                })
-        }], function (error, result){
-            callback();
+            function (next){
+                self.client.mkdirp(servicePath, zookeeper.CreateMode.PERSISTENT, next);
+            },function (path, next) {
+                self.client.transaction().
+                    create(instancePath, zookeeper.CreateMode.PERSISTENT ,new Buffer(ServiceInstance.serialize(service))).
+                    commit(function (error, results) {
+                        if (error && error.getCode() === Exception.NODE_EXISTS) {
+                            console.log('NODE_EXISTS');
+                        }
+                        next();
+                    })
+            }
+        ], function (error){
+            if(callback){
+                callback(null, null);
+            }
         });
 };
 
