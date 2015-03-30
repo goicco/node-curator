@@ -63,16 +63,13 @@ discovery.client.once("connected", function(){
 		});
 	*/
 	var provider = ServiceProvider.build(discovery, 'test');
+	provider.start();
 
 	async.waterfall([
 		function (next) {
-			provider.start(next);
-		},function (next) {
 			discovery.registerService(service1, next);
 		},function (cache, next) {
-			console.log("get instance");
 			var instance = provider.getInstance();
-			console.log(instance);
 		}
 	], function(error, result){
 

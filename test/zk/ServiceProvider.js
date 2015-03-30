@@ -12,6 +12,7 @@ ServiceProvider.prototype.getInstance = function() {
 	var self = this;
 	
 	var instances = self.cache.getInstances();
+	console.log('instances = %s', instances);
 	if ( !instances || instances.length == 0 ){
 		return null;
 	}

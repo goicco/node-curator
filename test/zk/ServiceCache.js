@@ -9,16 +9,75 @@ function ServiceCache(discovery, name) {
 	self.instances = {};
 	self.serviceName = name;
 
-
+	/*
 	var childEvent = null;
-	self.start = function (callback) {
+	self.start = function () {
+		async.waterfall([
+				function (next) {
+					self.discovery.client.getChildren(
+						self.discovery.pathForName(self.serviceName),
+						function (event){
+							console.log("event = %s", event);
+							childEvent = event;
+							self.start();
+						},
+						function (error, data, status) {
+							console.log("childEvent = %s", childEvent);
+							if (childEvent) {
+								next(data);
+							}
+						});
+				},function (instanceIds, next) {
+					delete self.instances;
+					self.instances = {};
+				
+					console.log('instanceIds = %s', instanceIds);
+
+					if(instanceIds != undefined) {
+						async.each(
+							instanceIds, 
+							function (instanceId, callback){
+								self.discovery.client.getData(
+									self.discovery.pathForInstance(self.serviceName, instanceId),
+									null,
+									function (error, data, status){
+										if (error) {
+											console.log(error);
+										} else {
+											var serviceInstance = ServiceInstance.build(data.toString());
+											self.instances[instanceId] = serviceInstance;
+										}
+										callback();
+									}
+								);
+							},
+							function (error){
+								next();
+							}
+						);
+					}					
+				}
+			], function(error, result){
+
+			}
+		);
+	}
+
+	self.stop = function () {
+
+	}
+	*/
+
+	/*
+	self.start = function () {
 		self.discovery.client.getChildren(				
 			self.discovery.pathForName(self.serviceName),
 				function (event){
 					childEvent = event;
-					self.start(callback);
+					self.start();
 				},
 				function (error, data, status){
+					console.log("childEvent = %s", childEvent);
 					if(childEvent){
 						switch (childEvent.name){
 							case 'NODE_CREATED':
@@ -29,7 +88,6 @@ function ServiceCache(discovery, name) {
 								break;
 						}
 					}
-					callback();
 				}
 			);
 	};
@@ -65,6 +123,7 @@ function ServiceCache(discovery, name) {
 			);
 		}
 	}
+	*/
 }
 
 
