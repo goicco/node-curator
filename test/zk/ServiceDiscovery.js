@@ -33,14 +33,14 @@ ServiceDiscovery.prototype.registerService = function (service, callback) {
                     create(instancePath, zookeeper.CreateMode.PERSISTENT ,new Buffer(ServiceInstance.serialize(service))).
                     commit(function (error, results) {
                         if (error && error.getCode() === Exception.NODE_EXISTS) {
-                            console.log('NODE_EXISTS');
+                            //console.log('NODE_EXISTS');
                         }
                         next();
                     })
             }
         ], function (error){
             if(callback){
-                callback(null, null);
+                callback(error, null);
             }
         });
 };

@@ -3,6 +3,7 @@ var zookeeper			=		require("node-zookeeper-client");
 var ServiceInstance		=		require("./ServiceInstance.js");
 var ServiceDiscovery	=		require("./ServiceDiscovery.js");
 var ServiceCache		=		require("./ServiceCache.js");
+var ServiceProvider		=		require("./ServiceProvider.js");
 
 
 var service1 = ServiceInstance.build("test", null);
@@ -61,8 +62,22 @@ discovery.client.once("connected", function(){
 
 		});
 	*/
-	var cache = ServiceCache.build(discovery, 'test');
-	cache.start();
+	var provider = ServiceProvider.build(discovery, 'test');
+
+	async.waterfall([
+		function (next) {
+			provider.start(next);
+		},function (next) {
+			discovery.registerService(service1, next);
+		},function (cache, next) {
+			console.log("get instance");
+			var instance = provider.getInstance();
+			console.log(instance);
+		}
+	], function(error, result){
+
+	});
+
 });
 
 discovery.client.connect();
