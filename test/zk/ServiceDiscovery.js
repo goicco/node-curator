@@ -6,7 +6,7 @@ var ServiceInstance = require('./ServiceInstance.js');
 
 function ServiceDiscovery (localhost, port, basePath) {
 	this.client = zookeeper.createClient(localhost + ':' + port);
-	this.services = new Map();
+	this.services = new Object();
     this.basePath = basePath;
 
     this.pathForName = function(name) {
@@ -23,14 +23,14 @@ ServiceDiscovery.prototype.registerService = function (service, callback) {
     var instancePath = self.pathForInstance(service.getName(), service.getId());
     var servicePath = self.pathForName(service.getName());
 
-	self.services.set(service.getId(), service);
+	self.services[service.getId()] = service;
 
     async.waterfall([
             function (next){
-                self.client.mkdirp(servicePath, zookeeper.CreateMode.PERSISTENT, next);
+                self.client.mkdirp(servicePath, zookeeper.CreateMode.EPHEMERAL, next);
             },function (path, next) {
                 self.client.transaction().
-                    create(instancePath, zookeeper.CreateMode.PERSISTENT ,new Buffer(ServiceInstance.serialize(service))).
+                    create(instancePath, zookeeper.CreateMode.EPHEMERAL ,new Buffer(ServiceInstance.serialize(service))).
                     commit(function (error, results) {
                         if (error && error.getCode() === Exception.NODE_EXISTS) {
                             //console.log('NODE_EXISTS');

@@ -68,7 +68,7 @@ function ServiceCache(discovery, name) {
 	}
 	*/
 
-	/*
+	var childEvent;
 	self.start = function () {
 		self.discovery.client.getChildren(				
 			self.discovery.pathForName(self.serviceName),
@@ -123,7 +123,7 @@ function ServiceCache(discovery, name) {
 			);
 		}
 	}
-	*/
+
 }
 
 

@@ -8,39 +8,51 @@ function ServiceCache (discovery, name) {
 	self.discovery = discovery;
 	self.serviceName = name;
 	self.emitter = new EventEmitter();
+	self.instances = {};
 
-	var onWatch = function (type, state, path) {
-		emitter.emit(type);
-		register();
-	}
-
-	var register = function (path, watch) {
+	this.registerWatch = function (path) {
 		process.nextTick(function() {
-			client.aw_get_children (
+			self.discovery.client.aw_get_children (
 					path,
-					onWatch,
+					self.onWatch,
 					function (rc, error, children) {
-						if(error) {
-							console.log(error);
+						if (error != 'ok') {
+							console.log('error: %s',error);
 						}
-						else{
-							this.updateInstance(children);
-						}
+						self.updateInstance(children);
 					}
 				);
 		})
 	}
 
-	var updateInstance = function(instanceIds) {
-		console.log(instanceIds);
+	this.onWatch = function (type, state, path) {
+		console.log('type is %s:', type);
+		self.emitter.emit(type);
+		self.registerWatch(path);
+	}
+
+	this.updateInstance = function(instanceIds) {
+		var self = this;
+
+		for (var i = 0;i < instanceIds.length; i++) {
+			self.instances[instanceIds[i]] = 'blank';
+		}
 	}
 }
 
-
 ServiceCache.prototype.start = function() {
-	this.register();
-};
+	var self = this;
+	self.registerWatch(self.discovery.pathForName(self.serviceName));
+}
 
+ServiceCache.prototype.close = function() {
+
+}
+
+ServiceCache.prototype.getInstances = function() {
+	var self = this;
+	return self.instances;
+}
 
 function build(discovery, name, callback){
 	if(callback){

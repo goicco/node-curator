@@ -10,6 +10,7 @@ var client = new Zookeeper({
 });
 
 var onWatch = function (type, state, path){
+	console.log('type is %s', type);
 	var emitter = new EventEmitter();
 	emitter.emit(type);
 	register();
@@ -43,6 +44,15 @@ client.connect(function (error) {
 			},function (next) {
 				client.a_create(
 					'/firebats/test/124', 
+					"test", 
+					Zookeeper.ZOO_EPHEMERAL, 
+					function (rc, error, path) {
+						//console.log(error);
+						next();
+					});				
+			},function (next) {
+				client.a_create(
+					'/firebats/test/125', 
 					"test", 
 					Zookeeper.ZOO_EPHEMERAL, 
 					function (rc, error, path) {

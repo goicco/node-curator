@@ -1,16 +1,18 @@
-var async		= require('async');
-var ZooKeeper	= require('zookeeper');
+var async			= require('async');
+var ZooKeeper		= require('zookeeper');
+var ServiceProvider = require('./ServiceProvider.js');
 
 function ServiceDiscovery (host, port, basePath) {
 	this.host = host;
 	this.port = port;
 	this.basePath = basePath;
 	this.client = new ZooKeeper({
-		connect : host + ':' + port;
+		connect : host + ':' + port,
 		timeout : 4000,
-		debug_level : Zookeeper.ZOO_LOG_LEVEL_WARN,
+		debug_level : ZooKeeper.ZOO_LOG_LEVEL_WARN,
 		host_order_deterministic: false		
 	});
+	this.providers = new Object();
 
 	this.pathForName = function (name) {
 		return this.basePath + '/' + name;
@@ -22,21 +24,24 @@ function ServiceDiscovery (host, port, basePath) {
 }
 
 
-ServiceDiscovery.prototype.registerService = function (service, callback) {
+ServiceDiscovery.prototype.register = function (service, callback) {
+	var self = this;
 	var instancePath = this.pathForInstance(service.getName(), service.getId());
 	var servicePath = this.pathForName(service.getName());
 
 	async.waterfall([
 				function (next) {
-					this.client.mkdirp(servicePath, next);
-				}, function (next) {
-					this.client.create(instancePath, new Buffer(JSON.stringify(service.entity)),ZooKeeper.ZOO_SEQUENCE | ZooKeeper.ZOO_EPHEMERAL, 
-						function (rc, error, path) {
-							if (rc != 0){
-								console.log('error is %e', error);
-							}
-							next();
-						})
+					self.client.mkdirp(servicePath, next);
+				}, function (result, next) {
+					process.nextTick( function(){
+						self.client.a_create(instancePath, new Buffer(JSON.stringify(service.entity)), ZooKeeper.ZOO_EPHEMERAL, 
+							function (rc, error, path) {
+								if (rc != 0){
+									console.log('error is %e', error);
+								}
+								next();
+							})
+					});
 				}
 			],function (error) {
 				if (callback) {
@@ -44,6 +49,34 @@ ServiceDiscovery.prototype.registerService = function (service, callback) {
 				}
 			}
 		);
+}
+
+ServiceDiscovery.prototype.unregister = function (serviceId) {
+
+}
+
+ServiceDiscovery.prototype.getOrLoadProvider = function (serviceName) {
+	var self = this;
+	var provider = self.providers[serviceName];
+
+	if( !provider) {
+		provider = ServiceProvider.build(this, serviceName);
+		provider.start();
+		self.providers[serviceName] = provider;
+	}
+	return provider;
+}
+
+ServiceDiscovery.prototype.select = function (serviceName){
+	var self = this;
+	var provider = self.getOrLoadProvider(serviceName);
+	if(provider) {
+		var instance = provider.getInstance();
+		console.log('instance is %s', instance);
+		return instance;
+	} else {
+		return null;
+	}
 }
 
 function build (host, port, basePath) {

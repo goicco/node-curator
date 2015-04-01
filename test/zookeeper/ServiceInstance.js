@@ -2,16 +2,16 @@ var uuid = require('node-uuid');
 
 function ServiceInstance (name) {
 	this.entity = new Object();
-	this.entity.name = name;
-	this.entity.ServiceId = uuid.v4();
+	this.entity.serviceName = name;
+	this.entity.serviceId = uuid.v4();
 }
 
 ServiceInstance.prototype.getName = function(){
-	return this.entity.ServiceName;
+	return this.entity.serviceName;
 }
 
 ServiceInstance.prototype.getId = function(){
-	return this.entity.ServiceId;
+	return this.entity.serviceId;
 }
 
 function build(name) {
