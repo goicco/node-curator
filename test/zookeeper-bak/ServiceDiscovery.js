@@ -55,7 +55,7 @@ ServiceDiscovery.prototype.unregister = function (serviceId) {
 
 }
 
-ServiceDiscovery.prototype.select = function (serviceName){
+ServiceDiscovery.prototype.select = function (serviceName, callback){
 	var self = this;
 	var cache = self.caches[serviceName];
 

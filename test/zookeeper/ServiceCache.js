@@ -1,5 +1,4 @@
-var ZooKeeper		= require('zookeeper');
-var EventEmitter	= require('events').EventEmitter;
+var ZK 				= require('zookeeper');
 var async			= require('async');
 
 function ServiceCache (discovery, name) {
@@ -7,60 +6,120 @@ function ServiceCache (discovery, name) {
 
 	self.discovery = discovery;
 	self.serviceName = name;
-	self.emitter = new EventEmitter();
-	self.instances = {};
+	self.instances = [];
+	self.instanceInx = 0;
 
-	this.registerWatch = function (path) {
-		process.nextTick(function() {
-			self.discovery.client.aw_get_children (
-					path,
-					self.onWatch,
-					function (rc, error, children) {
-						if (error != 'ok') {
-							console.log('error: %s',error);
-						}
-						self.updateInstance(children);
-					}
-				);
-		})
+	this.translateEvent = function(event) {
+		var e;
+
+		switch (event) {
+			case ZK.ZOO_CREATED_EVENT:
+				e = 'create';
+				break;
+			case ZK.ZOO_DELETED_EVENT:
+				e = 'delete';
+				break;
+			case ZK.ZOO_CHANGED_EVENT:
+				e = 'change';
+				break;
+			case ZK.ZOO_CHILD_EVENT:
+				e = 'child';
+				break;
+			case ZK.ZOO_SESSION_EVENT:
+				e = 'session';
+				break;
+			case ZK.ZOO_NOTWATCHING_EVENT:
+				e = 'nowatch';
+				break;
+			default:
+				e = 'unknown';
+				break;
+		}
+		return (e);
 	}
 
-	this.onWatch = function (type, state, path) {
-		console.log('type is %s:', type);
-		self.emitter.emit(type);
-		self.registerWatch(path);
-	}
-
-	this.updateInstance = function(instanceIds) {
+	this.updateInstance = function(instanceIds, callback) {
 		var self = this;
 
-		for (var i = 0;i < instanceIds.length; i++) {
-			self.instances[instanceIds[i]] = 'blank';
-		}
+		async.each(
+			instanceIds, 
+			function (instanceId, next) {
+				self.discovery.client.a_get(
+						self.discovery.pathForInstance(self.serviceName, instanceId),
+						null,
+						function (rc, msg, stat, data) {
+							self.instances[instanceId] = data.toString();
+							next();
+						}
+					)
+			},
+			function (error) {
+				if (error) {
+					console.log(error);
+				}
+				if (callback) {
+					callback(null, null);
+				}
+			}
+		);
 	}
 }
 
-ServiceCache.prototype.start = function() {
+ServiceCache.prototype.watchChild = function(path) {
 	var self = this;
-	self.registerWatch(self.discovery.pathForName(self.serviceName));
+
+	process.nextTick( function(){
+		self.discovery.client.aw_get_children (
+			path,
+			function (type, state, path) {
+				var event = self.translateEvent(type);
+				self.watchChild(path);
+			}, function (rc, error, children){
+				if (error != 'ok'){
+					console.log(error);
+				}
+				self.updateInstance(children);
+			}
+		);
+	});
 }
 
-ServiceCache.prototype.close = function() {
-
-}
-
-ServiceCache.prototype.getInstances = function() {
+ServiceCache.prototype.start = function(callback) {
 	var self = this;
-	return self.instances;
+
+	var path = self.discovery.pathForName(self.serviceName);
+	self.watchChild(path);
+	self.discovery.client.a_get_children (
+			path,
+			null,
+			function (rc, error, children) {
+				if (error != 'ok'){
+					console.log(error);
+				}				
+				self.updateInstance(children, callback);
+			}
+		)
 }
 
-function build(discovery, name, callback){
-	if(callback){
-		callback(new ServiceCache(discovery, name));
+ServiceCache.prototype.getInstance = function () {
+	var self = this;
+
+	if ( !self.instances ) {
+		return null;
 	}
-	else{
-		return new ServiceCache(discovery, name);
-	} 
+
+	var keys = new Array();
+	self.instances.sort();
+	for (var key in self.instances) {
+		keys.push(key);
+	}
+	var theKey = keys[self.instanceInx++ % keys.length]; 
+	return self.instances[theKey];
+}
+
+
+function build(discovery, name){
+	return new ServiceCache(discovery, name);
 }
 
 exports.build = build;
