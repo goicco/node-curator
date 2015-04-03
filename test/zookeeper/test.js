@@ -5,7 +5,7 @@ var ServiceInstance		= require('./ServiceInstance.js');
 var ServiceCache		= require('./ServiceCache.js');
 
 
-var discovery = ServiceDiscovery.build('112.124.117.146', '2181', '/firebats/test');
+var discovery = ServiceDiscovery.build('192.168.1.220', '2181', '/firebats-yux/services');
 var cache = ServiceCache.build(discovery, '001');
 
 var service1 = ServiceInstance.build('001');

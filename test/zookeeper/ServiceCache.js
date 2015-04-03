@@ -95,7 +95,7 @@ ServiceCache.prototype.start = function(callback) {
 			function (rc, error, children) {
 				if (error != 'ok'){
 					console.log(error);
-				}				
+				}		
 				self.updateInstance(children, callback);
 			}
 		)
