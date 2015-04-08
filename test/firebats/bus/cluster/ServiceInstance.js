@@ -1,5 +1,6 @@
 var uuid 	= require('node-uuid');
 var os 		= require('os');
+var Service = require('./Service.js');
 
 function ServiceInstance (name, id, address, payload, registrationTimeUTC, serviceType) {
 	this.name = name;
@@ -8,19 +9,6 @@ function ServiceInstance (name, id, address, payload, registrationTimeUTC, servi
 	this.payload = payload;//JSON.parse(payload);
 	this.registrationTimeUTC = registrationTimeUTC;
 	this.serviceType = serviceType;
-}
-
-ServiceInstance.prototype.create = function(name, uri, serviceType){
-	var hostName = os.hostname();
-	var id = uuid.v4();
-	var payload = {};
-	payload.uri = uri;
-	payload.name = name;
-	payload.serviceId = id;
-	//TODO
-	payload.nodeId = null;
-	var serviceType = serviceType ? serviceType : "DYNAMIC";
-	return new ServiceInstance(name, id, hostname, payload, Date.now(), serviceType);
 }
 
 ServiceInstance.prototype.getName = function(){
@@ -42,7 +30,7 @@ function deserialize(rawStr) {
 					obj.name, 
 					obj.id, 
 					obj.address, 
-					obj.payload,
+					Service.deserialize(obj.payload),
 					obj.registrationTimeUTC,
 					obj.serviceType
 				);
@@ -51,6 +39,22 @@ function deserialize(rawStr) {
 function serialize(obj) {
 }
 
+function build (name, uri, serviceType) {
+	var hostName = os.hostname();
+	//TODO set nodeId
+	var payload = Service.create(null, name, uri);
+	var serviceType = serviceType ? serviceType : "DYNAMIC";
+	return new ServiceInstance(
+					name, 
+					payload.getServiceId(), 
+					hostName, 
+					payload, 
+					Date.now(), 
+					serviceType
+				);
+}
+
+exports.build = build;
 exports.serialize = serialize;
 exports.deserialize = deserialize;
 exports.ServiceInstance = ServiceInstance;

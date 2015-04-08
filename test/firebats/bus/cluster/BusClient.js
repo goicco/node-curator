@@ -6,16 +6,14 @@ function BusClient(uri) {
 	this.client = new WebSocketClient();
 }
 
-BusClient.prototype.create = function (uri) {
-	return new BusClient(uri);
-}
-
 BusClient.prototype.connect = function (callback) {
 	var self = this;
 
-	self.client.connect(self.uri, null);
+	//TODO decode uri
+	self.client.connect('ws://192.168.1.220:44856/bus', null);
 	self.client.on('connect', function (connection) {
 		self.connection = connection;
+		callback(null, self);
 	});
 }
 
@@ -23,12 +21,16 @@ BusClient.prototype.close = function () {
 
 }
 
-BusClient.prototype.writeAndFlush = function (message, callback) {
+BusClient.prototype.writeAndFlush = function (message) {
 	var self = this;
 
 	if (self.connection) {
 		self.connection.send(message);
 	}
+}
+
+function create(uri) {
+	return new BusClient(uri);
 }
 
 exports.create = create;
